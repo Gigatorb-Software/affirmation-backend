@@ -12,16 +12,222 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
+  id           String    @id @default(uuid())
+  firstName    String
+  lastName     String
+  dob          DateTime
+  username     String    @unique
+  email        String    @unique
+  password     String?
+  phone        String?   
+  gender       String?
+  isAdmin      Boolean   @default(false)
+  subscription Subscription?
+  posts        Post[]
+  comments     Comment[]
+  communities  CommunityMember[]
+  createdCommunities Community[]
+  communityPosts CommunityPost[]
+  affirmations AffirmationHistory[]
+  createdAffirmations Affirmation[]
+  goals        Goal[]
+  notifications Notification[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
-enum Role {
-  USER
+model Subscription {
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String   @unique
+  plan         String
+  startDate    DateTime @default(now())
+  endDate      DateTime?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Post {
+  id           String    @id @default(uuid())
+  author       User      @relation(fields: [authorId], references: [id])
+  authorId     String
+  content      String?
+  mediaUrl     String?
+  postType     PostType
+  category     Category? @relation(fields: [categoryId], references: [id])
+  categoryId   String?
+  privacy      Privacy   @default(PUBLIC)
+  tags         PostTag[]
+  likes        Int       @default(0)
+  comments     Comment[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model PostTag {
+  id        String   @id @default(uuid())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  tag       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id         String    @id @default(uuid())
+  post       Post      @relation(fields: [postId], references: [id])
+  postId     String
+  author     User      @relation(fields: [authorId], references: [id])
+  authorId   String
+  content    String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+enum PostType {
+  TEXT
+  IMAGE
+  VIDEO
+}
+
+enum Privacy {
+  PUBLIC
+  PRIVATE
+}
+
+model Community {
+  id           String             @id @default(uuid())
+  name         String             @unique
+  description  String?
+  createdBy    User               @relation(fields: [createdById], references: [id])
+  createdById  String
+  members      CommunityMember[]
+  posts        CommunityPost[]
+  isPrivate    Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model CommunityMember {
+  id           String     @id @default(uuid())
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+  community    Community  @relation(fields: [communityId], references: [id])
+  communityId  String
+  role         MemberRole @default(MEMBER)
+  joinedAt     DateTime   @default(now())
+}
+
+enum MemberRole {
   ADMIN
+  MODERATOR
+  MEMBER
+}
+
+model CommunityPost {
+  id           String    @id @default(uuid())
+  community    Community @relation(fields: [communityId], references: [id])
+  communityId  String
+  author       User      @relation(fields: [authorId], references: [id])
+  authorId     String
+  content      String?
+  mediaUrl     String?
+  postType     PostType
+  category     Category? @relation(fields: [categoryId], references: [id])
+  categoryId   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Goal {
+  id            String       @id @default(uuid())
+  user          User         @relation(fields: [userId], references: [id])
+  userId        String
+  title         String
+  description   String?
+  startDate     DateTime     @default(now())
+  targetDate    DateTime?
+  status        GoalStatus   @default(ACTIVE)
+  progress      Int          @default(0)
+  tasksDone     Int          @default(0)
+  milestones    GoalMilestone[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model GoalMilestone {
+  id          String   @id @default(uuid())
+  goal        Goal     @relation(fields: [goalId], references: [id])
+  goalId      String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+model Affirmation {
+  id           String      @id @default(uuid())
+  content      String
+  audioUrl     String?
+  category     Category?   @relation(fields: [categoryId], references: [id])
+  categoryId   String?
+  createdBy    User?       @relation(fields: [userId], references: [id])
+  userId       String?
+  isPremium    Boolean     @default(false)
+  history      AffirmationHistory[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model AffirmationHistory {
+  id            String      @id @default(uuid())
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String
+  affirmation   Affirmation @relation(fields: [affirmationId], references: [id])
+  affirmationId String
+  seenAt        DateTime    @default(now())
+  isCompleted   Boolean     @default(false)
+}
+
+model Category {
+  id             String          @id @default(uuid())
+  name           String          @unique
+  description    String?
+  isPremium      Boolean         @default(false)
+
+  posts          Post[]
+  affirmations   Affirmation[]
+  communityPosts CommunityPost[]
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  type        NotificationType
+  message     String
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  REPLY
+  REMINDER
+  ADMIN_UPDATE
+  AFFIRMATION
 }

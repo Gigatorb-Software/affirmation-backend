@@ -1,6 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
-
+const authRoutes = require("./routes/auth.routes");
 
 dotenv.config();
 
@@ -9,9 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("hellow");
-});
+app.use("/api/auth", authRoutes);
 
 app.listen(PORT, () => {
   console.log(`App listening to Port ${PORT}`);
