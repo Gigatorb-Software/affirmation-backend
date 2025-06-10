@@ -1,0 +1,295 @@
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
+exports.createPost = async ({
+  authorId,
+  content,
+  mediaUrl,
+  postType,
+  categoryId,
+  privacy,
+  tags,
+}) => {
+  // Validate required fields
+  if (!authorId || !postType) {
+    throw new Error("Author ID and post type are required");
+  }
+
+  // Validate post type
+  if (!["TEXT", "IMAGE", "VIDEO"].includes(postType)) {
+    throw new Error("Invalid post type");
+  }
+
+  // Validate privacy
+  if (!["PUBLIC", "PRIVATE"].includes(privacy)) {
+    throw new Error("Invalid privacy setting");
+  }
+
+  // Create post with tags
+  const post = await prisma.post.create({
+    data: {
+      authorId,
+      content,
+      mediaUrl,
+      postType,
+      categoryId,
+      privacy,
+      tags: {
+        create: tags?.map((tag) => ({ tag })) || [],
+      },
+    },
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+        },
+      },
+      category: true,
+      tags: true,
+      comments: {
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              username: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return post;
+};
+
+exports.getPost = async (postId) => {
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+        },
+      },
+      category: true,
+      tags: true,
+      comments: {
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              username: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!post) {
+    throw new Error("Post not found");
+  }
+
+  return post;
+};
+
+exports.updatePost = async (postId, authorId, updateData) => {
+  // Check if post exists and belongs to user
+  const existingPost = await prisma.post.findFirst({
+    where: {
+      id: postId,
+      authorId,
+    },
+  });
+
+  if (!existingPost) {
+    throw new Error("Post not found or unauthorized");
+  }
+
+  // Update post
+  const post = await prisma.post.update({
+    where: { id: postId },
+    data: {
+      content: updateData.content,
+      mediaUrl: updateData.mediaUrl,
+      categoryId: updateData.categoryId,
+      privacy: updateData.privacy,
+      tags: {
+        deleteMany: {},
+        create: updateData.tags?.map((tag) => ({ tag })) || [],
+      },
+    },
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+        },
+      },
+      category: true,
+      tags: true,
+      comments: {
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              username: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return post;
+};
+
+exports.deletePost = async (postId, authorId) => {
+  // Check if post exists and belongs to user
+  const existingPost = await prisma.post.findFirst({
+    where: {
+      id: postId,
+      authorId,
+    },
+  });
+
+  if (!existingPost) {
+    throw new Error("Post not found or unauthorized");
+  }
+
+  // Delete post
+  await prisma.post.delete({
+    where: { id: postId },
+  });
+
+  return { message: "Post deleted successfully" };
+};
+
+exports.getUserPosts = async (userId, page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
+  const [posts, total] = await Promise.all([
+    prisma.post.findMany({
+      where: { authorId: userId },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true,
+          },
+        },
+        category: true,
+        tags: true,
+        comments: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                username: true,
+              },
+            },
+          },
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.post.count({
+      where: { authorId: userId },
+    }),
+  ]);
+
+  return {
+    posts,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+exports.getAllPosts = async (page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
+  const [posts, total] = await Promise.all([
+    prisma.post.findMany({
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true,
+          },
+        },
+        category: true,
+        tags: true,
+        comments: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                username: true,
+              },
+            },
+          },
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.post.count(),
+  ]);
+
+  return {
+    posts,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+exports.adminDeletePost = async (postId) => {
+  // Check if post exists
+  const existingPost = await prisma.post.findUnique({
+    where: { id: postId },
+  });
+
+  if (!existingPost) {
+    throw new Error("Post not found");
+  }
+
+  // Delete post
+  await prisma.post.delete({
+    where: { id: postId },
+  });
+
+  return { message: "Post deleted successfully" };
+};
