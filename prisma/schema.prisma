@@ -27,6 +27,7 @@ model User {
   subscription Subscription?
   posts        Post[]
   comments     Comment[]
+  postLikes    PostLike[]
   communities  CommunityMember[]
   createdCommunities Community[]
   communityPosts CommunityPost[]
@@ -61,7 +62,7 @@ model Post {
   categoryId   String?
   privacy      Privacy   @default(PUBLIC)
   tags         PostTag[]
-  likes        Int       @default(0)
+  likes        PostLike[]
   comments     Comment[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -74,6 +75,17 @@ model PostTag {
   tag       String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
 }
 
 model Comment {
