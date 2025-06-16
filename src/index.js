@@ -6,6 +6,8 @@ const postRoutes = require("./routes/post.routes");
 const categoryRoutes = require("./routes/category.routes");
 const interactionRoutes = require("./routes/interaction.routes");
 const communityRoutes = require("./routes/community.routes");
+const goalRoutes = require("./routes/goal.routes");
+const affirmationRoutes = require("./routes/affirmation.routes");
 
 dotenv.config();
 
@@ -44,6 +46,8 @@ app.use("/api/post", postRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/interaction", interactionRoutes);
 app.use("/api/community", communityRoutes);
+app.use("/api/goals", goalRoutes);
+app.use("/api/affirmations", affirmationRoutes);
 
 app.listen(PORT, () => {
   console.log(`App listening to Port ${PORT}`);
