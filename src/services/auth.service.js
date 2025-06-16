@@ -11,6 +11,7 @@ exports.register = async ({
   password,
   phone,
   gender,
+  isAdmin = false,
 }) => {
   // Check if user already exists
   const existingUser = await prisma.user.findFirst({
@@ -35,7 +36,7 @@ exports.register = async ({
       password: hashedPassword,
       phone,
       gender,
-      isAdmin: false, // Default to false for new registrations
+      isAdmin,
     },
   });
 
