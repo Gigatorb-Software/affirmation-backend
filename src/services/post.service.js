@@ -171,10 +171,25 @@ exports.deletePost = async (postId, authorId) => {
     throw new Error("Post not found or unauthorized");
   }
 
-  // Delete post
-  await prisma.post.delete({
-    where: { id: postId },
-  });
+  // Delete related records first
+  await prisma.$transaction([
+    // Delete comments
+    prisma.comment.deleteMany({
+      where: { postId },
+    }),
+    // Delete likes
+    prisma.postLike.deleteMany({
+      where: { postId },
+    }),
+    // Delete tags
+    prisma.postTag.deleteMany({
+      where: { postId },
+    }),
+    // Finally delete the post
+    prisma.post.delete({
+      where: { id: postId },
+    }),
+  ]);
 
   return { message: "Post deleted successfully" };
 };
