@@ -8,6 +8,7 @@ const interactionRoutes = require("./routes/interaction.routes");
 const communityRoutes = require("./routes/community.routes");
 const goalRoutes = require("./routes/goal.routes");
 const affirmationRoutes = require("./routes/affirmation.routes");
+const notificationRoutes = require("./routes/notification.routes");
 
 dotenv.config();
 
@@ -36,7 +37,6 @@ app.use(
   })
 );
 
-
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -48,6 +48,7 @@ app.use("/api/interaction", interactionRoutes);
 app.use("/api/community", communityRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/affirmations", affirmationRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.listen(PORT, () => {
   console.log(`App listening to Port ${PORT}`);

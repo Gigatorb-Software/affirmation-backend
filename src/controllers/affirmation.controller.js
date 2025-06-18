@@ -114,6 +114,19 @@ class AffirmationController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  // Test endpoint to trigger affirmation notifications manually
+  async testSendAffirmationNotification(req, res) {
+    try {
+      const {
+        sendAffirmationNotifications,
+      } = require("../scheduler/affirmationScheduler");
+      await sendAffirmationNotifications();
+      res.status(200).json({ message: "Affirmation notifications sent." });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
 }
 
 module.exports = new AffirmationController();

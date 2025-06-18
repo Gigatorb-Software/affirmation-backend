@@ -30,4 +30,9 @@ router.put(
   affirmationController.markAffirmationCompleted
 );
 
+// Test route to trigger affirmation notifications manually
+router.post("/test/send-notification", (req, res) =>
+  affirmationController.testSendAffirmationNotification(req, res)
+);
+
 module.exports = router;

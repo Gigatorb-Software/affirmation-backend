@@ -24,6 +24,7 @@ model User {
   phone        String?   
   gender       String?
   isAdmin      Boolean   @default(false)
+  fcmToken     String?   // Add FCM token field
   subscription Subscription?
   posts        Post[]
   comments     Comment[]
@@ -225,21 +226,27 @@ model Category {
 }
 
 model Notification {
-  id          String    @id @default(uuid())
-  user        User      @relation(fields: [userId], references: [id])
-  userId      String
-  type        NotificationType
-  message     String
-  isRead      Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  title     String
+  body      String
+  message   String   @default("")
+  type      NotificationType @default(GENERAL)
+  data      Json?    // For additional notification data
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum NotificationType {
+  GENERAL
+  ACHIEVEMENT
+  REMINDER
+  COMMUNITY
   LIKE
   COMMENT
-  REPLY
-  REMINDER
-  ADMIN_UPDATE
-  AFFIRMATION
+  FOLLOW
+  SYSTEM
+  TEST
 }

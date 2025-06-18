@@ -1,30 +1,23 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE `User` (
+    `id` VARCHAR(191) NOT NULL,
+    `firstName` VARCHAR(191) NOT NULL,
+    `lastName` VARCHAR(191) NOT NULL,
+    `dob` DATETIME(3) NOT NULL,
+    `username` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `password` VARCHAR(191) NULL,
+    `phone` VARCHAR(191) NULL,
+    `gender` VARCHAR(191) NULL,
+    `isAdmin` BOOLEAN NOT NULL DEFAULT false,
+    `fcmToken` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
 
-  - The primary key for the `user` table will be changed. If it partially fails, the table could be left without primary key constraint.
-  - You are about to drop the column `name` on the `user` table. All the data in the column will be lost.
-  - A unique constraint covering the columns `[username]` on the table `User` will be added. If there are existing duplicate values, this will fail.
-  - Added the required column `dob` to the `User` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `firstName` to the `User` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `lastName` to the `User` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `updatedAt` to the `User` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `username` to the `User` table without a default value. This is not possible if the table is not empty.
-
-*/
--- AlterTable
-ALTER TABLE `user` DROP PRIMARY KEY,
-    DROP COLUMN `name`,
-    ADD COLUMN `dob` DATETIME(3) NOT NULL,
-    ADD COLUMN `firstName` VARCHAR(191) NOT NULL,
-    ADD COLUMN `gender` VARCHAR(191) NULL,
-    ADD COLUMN `isAdmin` BOOLEAN NOT NULL DEFAULT false,
-    ADD COLUMN `lastName` VARCHAR(191) NOT NULL,
-    ADD COLUMN `password` VARCHAR(191) NULL,
-    ADD COLUMN `phone` VARCHAR(191) NULL,
-    ADD COLUMN `updatedAt` DATETIME(3) NOT NULL,
-    ADD COLUMN `username` VARCHAR(191) NOT NULL,
-    MODIFY `id` VARCHAR(191) NOT NULL,
-    ADD PRIMARY KEY (`id`);
+    UNIQUE INDEX `User_username_key`(`username`),
+    UNIQUE INDEX `User_email_key`(`email`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `Subscription` (
@@ -50,7 +43,6 @@ CREATE TABLE `Post` (
     `postType` ENUM('TEXT', 'IMAGE', 'VIDEO') NOT NULL,
     `categoryId` VARCHAR(191) NULL,
     `privacy` ENUM('PUBLIC', 'PRIVATE') NOT NULL DEFAULT 'PUBLIC',
-    `likes` INTEGER NOT NULL DEFAULT 0,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -65,6 +57,17 @@ CREATE TABLE `PostTag` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `PostLike` (
+    `id` VARCHAR(191) NOT NULL,
+    `postId` VARCHAR(191) NOT NULL,
+    `userId` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `PostLike_postId_userId_key`(`postId`, `userId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -190,17 +193,17 @@ CREATE TABLE `Category` (
 CREATE TABLE `Notification` (
     `id` VARCHAR(191) NOT NULL,
     `userId` VARCHAR(191) NOT NULL,
-    `type` ENUM('LIKE', 'COMMENT', 'REPLY', 'REMINDER', 'ADMIN_UPDATE', 'AFFIRMATION') NOT NULL,
+    `title` VARCHAR(191) NOT NULL,
+    `body` VARCHAR(191) NOT NULL,
     `message` VARCHAR(191) NOT NULL,
+    `type` ENUM('GENERAL', 'ACHIEVEMENT', 'REMINDER', 'COMMUNITY', 'LIKE', 'COMMENT', 'FOLLOW', 'SYSTEM', 'TEST') NOT NULL DEFAULT 'GENERAL',
+    `data` JSON NULL,
     `isRead` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateIndex
-CREATE UNIQUE INDEX `User_username_key` ON `User`(`username`);
 
 -- AddForeignKey
 ALTER TABLE `Subscription` ADD CONSTRAINT `Subscription_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -213,6 +216,12 @@ ALTER TABLE `Post` ADD CONSTRAINT `Post_categoryId_fkey` FOREIGN KEY (`categoryI
 
 -- AddForeignKey
 ALTER TABLE `PostTag` ADD CONSTRAINT `PostTag_postId_fkey` FOREIGN KEY (`postId`) REFERENCES `Post`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `PostLike` ADD CONSTRAINT `PostLike_postId_fkey` FOREIGN KEY (`postId`) REFERENCES `Post`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `PostLike` ADD CONSTRAINT `PostLike_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Comment` ADD CONSTRAINT `Comment_postId_fkey` FOREIGN KEY (`postId`) REFERENCES `Post`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
