@@ -3,7 +3,7 @@ const admin = require("../utils/firebase");
 
 const prisma = new PrismaClient();
 
-const sendNotification = async (userId, notification) => {
+const sendNotification = async (userId, notification, saveToDb = true) => {
   try {
     console.log("Fetching user FCM token for userId:", userId);
     // Get user's FCM token from database
@@ -35,24 +35,26 @@ const sendNotification = async (userId, notification) => {
       // Send message
       const response = await admin.messaging().send(message);
 
-      // Save notification to database
-      const notificationData = {
-        userId,
-        title: notification.title,
-        body: notification.body,
-        message: notification.message || notification.body, // Use body as message if not provided
-        type: notification.type || "GENERAL",
-        data: notification.data || {},
-        isRead: false,
-      };
+      if (saveToDb) {
+        // Save notification to database
+        const notificationData = {
+          userId,
+          title: notification.title,
+          body: notification.body,
+          message: notification.message || notification.body, // Use body as message if not provided
+          type: notification.type || "GENERAL",
+          data: notification.data || {},
+          isRead: false,
+        };
 
-      console.log("Creating notification record:", notificationData);
+        console.log("Creating notification record:", notificationData);
 
-      const savedNotification = await prisma.notification.create({
-        data: notificationData,
-      });
+        const savedNotification = await prisma.notification.create({
+          data: notificationData,
+        });
 
-      console.log("Notification saved to database:", savedNotification);
+        console.log("Notification saved to database:", savedNotification);
+      }
 
       return response;
     } catch (error) {
@@ -83,7 +85,8 @@ const createNotification = async (userId, type, message) => {
       data: {},
     };
 
-    return await sendNotification(userId, notification);
+    // Save to DB and send push
+    return await sendNotification(userId, notification, true);
   } catch (error) {
     console.error("Error creating notification:", error);
     throw error;
@@ -101,7 +104,8 @@ const sendPushNotification = async (userId, title, body) => {
       data: {},
     };
 
-    return await sendNotification(userId, notification);
+    // Only send push, do not save to DB
+    return await sendNotification(userId, notification, false);
   } catch (error) {
     console.error("Error sending push notification:", error);
     throw error;

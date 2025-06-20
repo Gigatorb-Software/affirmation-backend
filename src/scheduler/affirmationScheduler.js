@@ -30,20 +30,15 @@ async function sendAffirmationNotifications() {
         "AFFIRMATION",
         randomAffirmation.content
       );
-      await notificationService.sendPushNotification(
-        user.id,
-        "New Affirmation",
-        randomAffirmation.content
-      );
     }
   } catch (error) {
     console.error("Error sending affirmation notifications:", error);
   }
 }
 
-// Schedule the job to run at 12:31pm every day
+// Schedule the job to run every 6 hours
 cron.schedule(
-  "* * * * *",
+  "0 */6 * * *",
   () => {
     console.log("Scheduler triggered at:", new Date().toISOString());
     sendAffirmationNotifications();

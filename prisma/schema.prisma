@@ -249,4 +249,6 @@ enum NotificationType {
   FOLLOW
   SYSTEM
   TEST
+  AFFIRMATION
+  ANNOUNCEMENT
 }
