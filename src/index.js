@@ -10,6 +10,7 @@ const goalRoutes = require("./routes/goal.routes");
 const affirmationRoutes = require("./routes/affirmation.routes");
 const notificationRoutes = require("./routes/notification.routes");
 const adminNotificationRoutes = require("./routes/adminNotification.routes");
+const userManagementRoutes = require("./routes/userManagement.routes");
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use("/api/goals", goalRoutes);
 app.use("/api/affirmations", affirmationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin/notifications", adminNotificationRoutes);
+app.use("/api/admin/users", userManagementRoutes);
 
 app.listen(PORT, () => {
   console.log(`App listening to Port ${PORT}`);
