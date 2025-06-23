@@ -11,16 +11,21 @@ const affirmationRoutes = require("./routes/affirmation.routes");
 const notificationRoutes = require("./routes/notification.routes");
 const adminNotificationRoutes = require("./routes/adminNotification.routes");
 const userManagementRoutes = require("./routes/userManagement.routes");
+const setupSwagger = require("./config/swagger");
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
+// Setup Swagger
+setupSwagger(app);
+
 // CORS configuration
 const allowedOrigins = [
   "http://localhost:3000", // your frontend in dev
   "http://localhost:5173", // your deployed frontend
+  `http://localhost:${PORT}`, // allow swagger UI origin
 ];
 
 app.use(

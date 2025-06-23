@@ -214,6 +214,74 @@ const markNotificationAsRead = async (notificationId, userId) => {
   }
 };
 
+const markAllNotificationsAsRead = async (userId) => {
+  try {
+    return prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
+    });
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+    throw error;
+  }
+};
+
+const deleteNotification = async (notificationId, userId) => {
+  try {
+    return prisma.notification.delete({
+      where: { id: notificationId, userId },
+    });
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    throw error;
+  }
+};
+
+const sendNotificationToAll = async (notificationData) => {
+  const users = await prisma.user.findMany({
+    where: {
+      fcmToken: {
+        not: null,
+      },
+    },
+    select: {
+      id: true,
+      fcmToken: true,
+    },
+  });
+
+  const tokens = users.map((user) => user.fcmToken).filter(Boolean);
+  if (tokens.length === 0) {
+    return { successCount: 0, failureCount: 0 };
+  }
+
+  const message = {
+    notification: {
+      title: notificationData.title,
+      body: notificationData.body,
+    },
+    tokens: tokens,
+  };
+
+  const response = await admin.messaging().sendMulticast(message);
+
+  // Create notification records in DB
+  const notificationPromises = users.map((user) =>
+    createNotification(
+      user.id,
+      "ANNOUNCEMENT",
+      notificationData.body,
+      notificationData.title
+    )
+  );
+  await Promise.all(notificationPromises);
+
+  return {
+    successCount: response.successCount,
+    failureCount: response.failureCount,
+  };
+};
+
 module.exports = {
   sendNotification,
   createNotification,
@@ -222,4 +290,7 @@ module.exports = {
   removeUserFCMToken,
   getUserNotifications,
   markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+  sendNotificationToAll,
 };

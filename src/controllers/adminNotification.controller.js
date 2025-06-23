@@ -56,4 +56,37 @@ module.exports = {
     }
     res.json({ message: `Broadcast sent to ${sent} users.` });
   },
+
+  async sendToAll(req, res) {
+    if (!isAdmin(req.user)) return res.status(403).json({ error: "Forbidden" });
+    try {
+      const { title, body } = req.body;
+      const result = await notificationService.sendNotificationToAll({
+        title,
+        body,
+      });
+      res.json({
+        success: true,
+        message: `Notification sent to ${result.successCount} users.`,
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  async sendToUser(req, res) {
+    if (!isAdmin(req.user)) return res.status(403).json({ error: "Forbidden" });
+    try {
+      const { userId } = req.params;
+      const { title, body } = req.body;
+      await notificationService.sendNotification(userId, {
+        title,
+        body,
+        type: "ANNOUNCEMENT",
+      });
+      res.json({ success: true, message: "Notification sent successfully." });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
 };
