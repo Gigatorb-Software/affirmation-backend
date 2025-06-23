@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const notificationService = require("../services/notification.service");
 const { authenticate } = require("../middleware/auth");
+const admin = require("firebase-admin");
 
 // Save FCM token
 router.post("/token", authenticate, async (req, res) => {
@@ -96,6 +97,31 @@ router.post("/test-scheduled", authenticate, async (req, res) => {
   } catch (error) {
     console.error("Error scheduling notification:", error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Standalone Token Validation Route
+router.post("/validate-token", async (req, res) => {
+  const { token } = req.body;
+  if (!token) {
+    return res.status(400).json({ error: "Token is required" });
+  }
+
+  try {
+    console.log("Starting standalone token validation for token:", token);
+    await admin.messaging().send({ token: token }, true); // dry run
+    console.log("Standalone token validation successful");
+    res.status(200).json({ success: true, message: "Token is valid" });
+  } catch (error) {
+    console.error("Standalone token validation failed:", error);
+    res.status(500).json({
+      success: false,
+      message: "Token is invalid",
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
   }
 });
 
