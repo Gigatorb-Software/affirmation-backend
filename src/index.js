@@ -26,6 +26,7 @@ const allowedOrigins = [
   "http://localhost:3000", // your frontend in dev
   "http://localhost:5173", // your deployed frontend
   `http://localhost:${PORT}`, // allow swagger UI origin
+  `http://115.246.53.50:8000`, // allow swagger UI origin
 ];
 
 app.use(
