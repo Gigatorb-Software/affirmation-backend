@@ -55,6 +55,7 @@ router.post("/create", authenticate, postController.createPost);
  *         required: true
  *         schema:
  *           type: string
+ *    tags: [Posts, Admin]
  *     responses:
  *       200:
  *         description: Post data
@@ -175,7 +176,7 @@ router.get(
 router.delete(
   "/admin/:id",
   authenticate,
-  authorizeRoles("ADMIN"),
+  // authorizeRoles("ADMIN"),
   postController.adminDeletePost
 );
 
