@@ -150,7 +150,7 @@ router.get("/user/:userId", postController.getUserPosts);
 router.get(
   "/admin/all",
   authenticate,
-  authorizeRoles("ADMIN"),
+  // authorizeRoles("ADMIN"),
   postController.getAllPosts
 );
 
