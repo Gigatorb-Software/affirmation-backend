@@ -272,6 +272,12 @@ exports.getAllPosts = async (page = 1, limit = 10) => {
             },
           },
         },
+        _count: {
+          select: {
+            comments: true,
+            likes: true,
+          },
+        },
       },
       skip,
       take: limit,
