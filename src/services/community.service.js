@@ -264,17 +264,45 @@ class CommunityService {
   }
 
   // Get community posts
-  async getCommunityPosts(communityId) {
-    return prisma.communityPost.findMany({
+  async getCommunityPosts(communityId, currentUserId = null) {
+    const posts = await prisma.communityPost.findMany({
       where: { communityId },
       include: {
         author: true,
         category: true,
+        _count: {
+          select: {
+            comments: true,
+            likes: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
       },
     });
+
+    // Check if current user liked each post
+    const postsWithUserLikes = await Promise.all(
+      posts.map(async (post) => {
+        let userLiked = false;
+        if (currentUserId) {
+          const userLike = await prisma.communityPostLike.findFirst({
+            where: {
+              postId: post.id,
+              userId: currentUserId,
+            },
+          });
+          userLiked = !!userLike;
+        }
+        return {
+          ...post,
+          userLiked,
+        };
+      })
+    );
+
+    return postsWithUserLikes;
   }
 
   // Update community post

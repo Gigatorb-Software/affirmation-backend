@@ -67,7 +67,7 @@ exports.createPost = async ({
   return post;
 };
 
-exports.getPost = async (postId) => {
+exports.getPost = async (postId, currentUserId = null) => {
   const post = await prisma.post.findUnique({
     where: { id: postId },
     include: {
@@ -93,6 +93,12 @@ exports.getPost = async (postId) => {
           },
         },
       },
+      _count: {
+        select: {
+          comments: true,
+          likes: true,
+        },
+      },
     },
   });
 
@@ -100,7 +106,22 @@ exports.getPost = async (postId) => {
     throw new Error("Post not found");
   }
 
-  return post;
+  // Check if current user liked this post
+  let userLiked = false;
+  if (currentUserId) {
+    const userLike = await prisma.postLike.findFirst({
+      where: {
+        postId,
+        userId: currentUserId,
+      },
+    });
+    userLiked = !!userLike;
+  }
+
+  return {
+    ...post,
+    userLiked,
+  };
 };
 
 exports.updatePost = async (postId, authorId, updateData) => {
@@ -194,7 +215,12 @@ exports.deletePost = async (postId, authorId) => {
   return { message: "Post deleted successfully" };
 };
 
-exports.getUserPosts = async (userId, page = 1, limit = 10) => {
+exports.getUserPosts = async (
+  userId,
+  page = 1,
+  limit = 10,
+  currentUserId = null
+) => {
   const skip = (page - 1) * limit;
 
   const [posts, total] = await Promise.all([
@@ -223,6 +249,12 @@ exports.getUserPosts = async (userId, page = 1, limit = 10) => {
             },
           },
         },
+        _count: {
+          select: {
+            comments: true,
+            likes: true,
+          },
+        },
       },
       skip,
       take: limit,
@@ -233,8 +265,28 @@ exports.getUserPosts = async (userId, page = 1, limit = 10) => {
     }),
   ]);
 
+  // Check if current user liked each post
+  const postsWithUserLikes = await Promise.all(
+    posts.map(async (post) => {
+      let userLiked = false;
+      if (currentUserId) {
+        const userLike = await prisma.postLike.findFirst({
+          where: {
+            postId: post.id,
+            userId: currentUserId,
+          },
+        });
+        userLiked = !!userLike;
+      }
+      return {
+        ...post,
+        userLiked,
+      };
+    })
+  );
+
   return {
-    posts,
+    posts: postsWithUserLikes,
     pagination: {
       total,
       page,
@@ -244,7 +296,7 @@ exports.getUserPosts = async (userId, page = 1, limit = 10) => {
   };
 };
 
-exports.getAllPosts = async (page = 1, limit = 10) => {
+exports.getAllPosts = async (page = 1, limit = 10, currentUserId = null) => {
   const skip = (page - 1) * limit;
 
   const [posts, total] = await Promise.all([
@@ -286,8 +338,28 @@ exports.getAllPosts = async (page = 1, limit = 10) => {
     prisma.post.count(),
   ]);
 
+  // Check if current user liked each post
+  const postsWithUserLikes = await Promise.all(
+    posts.map(async (post) => {
+      let userLiked = false;
+      if (currentUserId) {
+        const userLike = await prisma.postLike.findFirst({
+          where: {
+            postId: post.id,
+            userId: currentUserId,
+          },
+        });
+        userLiked = !!userLike;
+      }
+      return {
+        ...post,
+        userLiked,
+      };
+    })
+  );
+
   return {
-    posts,
+    posts: postsWithUserLikes,
     pagination: {
       total,
       page,

@@ -21,7 +21,7 @@ exports.createPost = async (req, res) => {
 
 exports.getPost = async (req, res) => {
   try {
-    const post = await postService.getPost(req.params.id);
+    const post = await postService.getPost(req.params.id, req.user?.id);
 
     res.status(200).json({
       success: true,
@@ -77,7 +77,8 @@ exports.getUserPosts = async (req, res) => {
     const result = await postService.getUserPosts(
       req.params.userId,
       parseInt(page),
-      parseInt(limit)
+      parseInt(limit),
+      req.user?.id
     );
 
     res.status(200).json({
@@ -98,7 +99,8 @@ exports.getAllPosts = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
     const result = await postService.getAllPosts(
       parseInt(page),
-      parseInt(limit)
+      parseInt(limit),
+      req.user?.id
     );
 
     res.status(200).json({
