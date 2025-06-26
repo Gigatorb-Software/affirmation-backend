@@ -13,6 +13,7 @@ const adminNotificationRoutes = require("./routes/adminNotification.routes");
 const userManagementRoutes = require("./routes/userManagement.routes");
 const subscriptionRoutes = require("./routes/subscription.routes");
 const subscriptionWebhookRoutes = require("./routes/subscriptionWebhook.routes");
+const adminSubscriptionRoutes = require("./routes/adminSubscription.routes");
 const setupSwagger = require("./config/swagger");
 
 dotenv.config();
@@ -68,6 +69,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin/notifications", adminNotificationRoutes);
 app.use("/api/admin/users", userManagementRoutes);
 app.use("/api/subscription", subscriptionRoutes);
+app.use("/api/admin", adminSubscriptionRoutes);
 
 app.listen(PORT, () => {
   console.log(`App listening to Port ${PORT}`);
