@@ -11,6 +11,7 @@ const affirmationRoutes = require("./routes/affirmation.routes");
 const notificationRoutes = require("./routes/notification.routes");
 const adminNotificationRoutes = require("./routes/adminNotification.routes");
 const userManagementRoutes = require("./routes/userManagement.routes");
+const subscriptionRoutes = require("./routes/subscription.routes");
 const setupSwagger = require("./config/swagger");
 
 dotenv.config();
@@ -59,6 +60,7 @@ app.use("/api/affirmations", affirmationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin/notifications", adminNotificationRoutes);
 app.use("/api/admin/users", userManagementRoutes);
+app.use("/api/subscription", subscriptionRoutes);
 
 app.listen(PORT, () => {
   console.log(`App listening to Port ${PORT}`);
