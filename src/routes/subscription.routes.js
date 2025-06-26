@@ -3,13 +3,6 @@ const router = express.Router();
 const subscriptionController = require("../controllers/subscription.controller");
 const authMiddleware = require("../middleware/auth");
 
-// Stripe webhook (no auth required)
-router.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  subscriptionController.handleWebhook
-);
-
 // Apply authentication middleware to protected routes
 router.use(authMiddleware.authenticate);
 
@@ -30,5 +23,8 @@ router.get("/plans", subscriptionController.getAvailablePlans);
 
 // Verify payment success
 router.get("/verify-payment", subscriptionController.verifyPaymentSuccess);
+
+// Test webhook processing (for debugging)
+router.post("/test-webhook", subscriptionController.testWebhookProcessing);
 
 module.exports = router;

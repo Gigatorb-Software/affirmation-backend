@@ -12,6 +12,7 @@ const notificationRoutes = require("./routes/notification.routes");
 const adminNotificationRoutes = require("./routes/adminNotification.routes");
 const userManagementRoutes = require("./routes/userManagement.routes");
 const subscriptionRoutes = require("./routes/subscription.routes");
+const subscriptionWebhookRoutes = require("./routes/subscriptionWebhook.routes");
 const setupSwagger = require("./config/swagger");
 
 dotenv.config();
@@ -29,6 +30,12 @@ const allowedOrigins = [
   `http://localhost:${PORT}`, // allow swagger UI origin
   `http://115.246.53.50:8000`, // allow swagger UI origin
 ];
+
+app.use(
+  "/api/subscription/webhook",
+  express.raw({ type: "application/json" }),
+  subscriptionWebhookRoutes
+);
 
 app.use(
   cors({

@@ -63,24 +63,60 @@ class SubscriptionService {
   // Handle successful payment webhook
   async handlePaymentSuccess(session) {
     try {
+      console.log(
+        "🔄 Starting payment success handling for session:",
+        session.id
+      );
+
       const { userId, planType } = session.metadata;
+      console.log("👤 User and plan details:", { userId, planType });
 
       // Get subscription details from Stripe
+      console.log(
+        "📞 Retrieving subscription from Stripe:",
+        session.subscription
+      );
       const subscription = await stripe.subscriptions.retrieve(
         session.subscription
       );
+      console.log("📋 Stripe subscription details:", {
+        id: subscription.id,
+        status: subscription.status,
+        customer: subscription.customer,
+        current_period_start: subscription.current_period_start,
+        current_period_end: subscription.current_period_end,
+      });
+
+      // Handle date conversion with fallbacks
+      const now = new Date();
+      const startDate = subscription.current_period_start
+        ? new Date(subscription.current_period_start * 1000)
+        : now;
+
+      const endDate = subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000)
+        : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+
+      console.log("📅 Calculated dates:", {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        originalStart: subscription.current_period_start,
+        originalEnd: subscription.current_period_end,
+      });
 
       // Update or create subscription in database
       const subscriptionData = {
         plan: planType,
-        startDate: new Date(subscription.current_period_start * 1000),
-        endDate: new Date(subscription.current_period_end * 1000),
+        startDate: startDate,
+        endDate: endDate,
         isActive: subscription.status === "active",
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: subscription.customer,
       };
 
-      await prisma.subscription.upsert({
+      console.log("💾 Saving subscription data to database:", subscriptionData);
+
+      const result = await prisma.subscription.upsert({
         where: { userId },
         update: subscriptionData,
         create: {
@@ -89,8 +125,11 @@ class SubscriptionService {
         },
       });
 
+      console.log("✅ Subscription saved to database:", result);
+
       return { success: true, subscription: subscriptionData };
     } catch (error) {
+      console.error("❌ Error in handlePaymentSuccess:", error);
       throw new Error(`Failed to handle payment success: ${error.message}`);
     }
   }
