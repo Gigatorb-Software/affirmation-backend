@@ -608,6 +608,211 @@ class UserManagementService {
       deletedCount: result.count,
     };
   }
+
+  // Get all users with public information only (for regular users)
+  async getAllPublicUsers(page = 1, limit = 10, search = "", filters = {}) {
+    const skip = (page - 1) * limit;
+
+    const whereClause = {
+      AND: [
+        ...(search
+          ? [
+              {
+                OR: [
+                  { firstName: { contains: search } },
+                  { lastName: { contains: search } },
+                  { username: { contains: search } },
+                ],
+              },
+            ]
+          : []),
+        ...(filters.gender ? [{ gender: filters.gender }] : []),
+      ],
+    };
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          gender: true,
+          _count: {
+            select: {
+              posts: true,
+              comments: true,
+              communities: true,
+              createdCommunities: true,
+            },
+          },
+          createdAt: true,
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.user.count({ where: whereClause }),
+    ]);
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // Get public user profile by ID (for regular users)
+  async getPublicUserById(userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        gender: true,
+        posts: {
+          where: { privacy: "PUBLIC" },
+          select: {
+            id: true,
+            content: true,
+            postType: true,
+            createdAt: true,
+            _count: {
+              select: {
+                likes: true,
+                comments: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+        communities: {
+          where: { community: { isPrivate: false } },
+          select: {
+            role: true,
+            joinedAt: true,
+            community: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+              },
+            },
+          },
+        },
+        createdCommunities: {
+          where: { isPrivate: false },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            createdAt: true,
+            _count: {
+              select: {
+                members: true,
+                posts: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            posts: true,
+            comments: true,
+            communities: true,
+            createdCommunities: true,
+          },
+        },
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return user;
+  }
+
+  // Update current user's profile (for regular users)
+  async updateCurrentUserProfile(userId, updateData) {
+    // Only allow updating certain fields for regular users
+    const allowedFields = [
+      "firstName",
+      "lastName",
+      "username",
+      "email",
+      "phone",
+      "gender",
+      "dob",
+      "fcmToken",
+    ];
+
+    const filteredUpdateData = {};
+    for (const field of allowedFields) {
+      if (updateData[field] !== undefined) {
+        filteredUpdateData[field] = updateData[field];
+      }
+    }
+
+    // If password is being updated, hash it
+    if (updateData.password) {
+      filteredUpdateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+
+    // Check for unique constraints
+    if (filteredUpdateData.username) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          username: filteredUpdateData.username,
+          id: { not: userId },
+        },
+      });
+      if (existingUser) {
+        throw new Error("Username already exists");
+      }
+    }
+
+    if (filteredUpdateData.email) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: filteredUpdateData.email,
+          id: { not: userId },
+        },
+      });
+      if (existingUser) {
+        throw new Error("Email already exists");
+      }
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: filteredUpdateData,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        email: true,
+        phone: true,
+        gender: true,
+        dob: true,
+        fcmToken: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return user;
+  }
 }
 
 module.exports = new UserManagementService();

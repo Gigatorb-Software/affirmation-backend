@@ -36,6 +36,7 @@ model User {
   createdAffirmations Affirmation[]
   goals        Goal[]
   notifications Notification[]
+  categoryPreferences UserCategoryPreference[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
@@ -50,8 +51,44 @@ model Subscription {
   isActive             Boolean  @default(true)
   stripeSubscriptionId String?  // Stripe subscription ID
   stripeCustomerId     String?  // Stripe customer ID
+  adminCancelled       Boolean  @default(false) // Track if admin cancelled
+  cancellationReason   String?  // Reason for admin cancellation
+  refunded             Boolean  @default(false) // Track if refund was issued
+  refundAmount         Float?   // Amount refunded
+  refundDate           DateTime? // When refund was issued
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+  
+  // Transaction history
+  transactions         SubscriptionTransaction[]
+}
+
+model SubscriptionTransaction {
+  id                   String   @id @default(uuid())
+  subscription         Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscriptionId       String
+  transactionType      TransactionType
+  amount               Float?
+  currency             String   @default("USD")
+  stripeSubscriptionId String?  // Stripe subscription ID at time of transaction
+  stripePaymentIntent  String?  // Stripe payment intent ID
+  stripeInvoiceId      String?  // Stripe invoice ID
+  description          String?
+  metadata             Json?    // Additional transaction data
+  processedBy          String?  // User ID or "system" or "admin"
+  createdAt            DateTime @default(now())
+}
+
+enum TransactionType {
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_CANCELLED
+  SUBSCRIPTION_REACTIVATED
+  SUBSCRIPTION_CHANGED
+  REFUND_ISSUED
+  ADMIN_CANCELLATION
+  PAYMENT_FAILED
+  PAYMENT_SUCCEEDED
 }
 
 model Post {
@@ -222,9 +259,24 @@ model Category {
   posts          Post[]
   affirmations   Affirmation[]
   communityPosts CommunityPost[]
+  userPreferences UserCategoryPreference[]
 
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+}
+
+model UserCategoryPreference {
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId   String
+  isPreferred  Boolean  @default(true)
+  priority     Int      @default(0) // Higher number = higher priority
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, categoryId])
 }
 
 model Notification {
