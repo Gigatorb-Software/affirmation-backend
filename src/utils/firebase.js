@@ -4,9 +4,9 @@ const serviceAccount = require("../config/firebase-admin.json");
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    projectId: "affirmation-dcb89",
-    storageBucket: "affirmation-dcb89.firebasestorage.app",
-    messagingSenderId: "943424358644",
+    projectId: "wishara-3fc91",
+    storageBucket: "wishara-3fc91.firebasestorage.app",
+    messagingSenderId: "630149572513",
   });
 }
 
