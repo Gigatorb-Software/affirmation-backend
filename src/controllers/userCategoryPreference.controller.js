@@ -417,6 +417,119 @@ class UserCategoryPreferenceController {
       });
     }
   }
+
+  // Update category preferences with array of category IDs and isPreferred status
+  async updateCategoryPreferences(req, res) {
+    try {
+      const userId = req.user.id;
+      const { categoryIds, isPreferred } = req.body;
+
+      // Log the received data for debugging
+      console.log("Received request body:", JSON.stringify(req.body, null, 2));
+
+      if (!categoryIds || !Array.isArray(categoryIds)) {
+        return res.status(400).json({
+          success: false,
+          message: "categoryIds array is required and must be an array",
+          received: req.body,
+        });
+      }
+
+      if (categoryIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "categoryIds array cannot be empty",
+          received: req.body,
+        });
+      }
+
+      if (typeof isPreferred !== "boolean") {
+        return res.status(400).json({
+          success: false,
+          message: "isPreferred must be a boolean value (true or false)",
+          received: req.body,
+        });
+      }
+
+      const result =
+        await userCategoryPreferenceService.updateCategoryPreferences(
+          userId,
+          categoryIds,
+          isPreferred
+        );
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.error,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Category preferences updated successfully",
+        data: {
+          updatedCount: result.data.updatedCount,
+          categoryIds: categoryIds,
+          isPreferred: isPreferred,
+        },
+      });
+    } catch (error) {
+      console.error("Error in updateCategoryPreferences controller:", error);
+
+      // Check if it's a JSON parsing error
+      if (error instanceof SyntaxError) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid JSON format in request body",
+          error: error.message,
+          expectedFormat: {
+            categoryIds: ["category_id_1", "category_id_2"],
+            isPreferred: true,
+          },
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
+  // Get all categories with user preference status
+  async getAllCategoriesWithPreferences(req, res) {
+    try {
+      const userId = req.user.id;
+
+      const result =
+        await userCategoryPreferenceService.getAllCategoriesWithPreferences(
+          userId
+        );
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: result.error,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+        message: "Categories retrieved successfully",
+      });
+    } catch (error) {
+      console.error(
+        "Error in getAllCategoriesWithPreferences controller:",
+        error
+      );
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
 }
 
 module.exports = new UserCategoryPreferenceController();

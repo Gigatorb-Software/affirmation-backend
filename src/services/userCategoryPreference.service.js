@@ -289,6 +289,110 @@ class UserCategoryPreferenceService {
       return { success: false, error: error.message };
     }
   }
+
+  // Update category preferences with array of category IDs and isPreferred status
+  async updateCategoryPreferences(userId, categoryIds, isPreferred) {
+    try {
+      // Check if user exists
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return { success: false, error: "User not found" };
+      }
+
+      // Validate all categories exist
+      const categories = await prisma.category.findMany({
+        where: { id: { in: categoryIds } },
+      });
+
+      if (categories.length !== categoryIds.length) {
+        return { success: false, error: "One or more categories not found" };
+      }
+
+      // Use transaction to update all preferences
+      const result = await prisma.$transaction(async (tx) => {
+        const updatedPreferences = [];
+
+        for (const categoryId of categoryIds) {
+          const updatedPreference = await tx.userCategoryPreference.upsert({
+            where: {
+              userId_categoryId: {
+                userId,
+                categoryId,
+              },
+            },
+            update: {
+              isPreferred,
+              updatedAt: new Date(),
+            },
+            create: {
+              userId,
+              categoryId,
+              isPreferred,
+              priority: 0,
+            },
+          });
+
+          updatedPreferences.push(updatedPreference);
+        }
+
+        return updatedPreferences;
+      });
+
+      return {
+        success: true,
+        data: {
+          updatedCount: result.length,
+          updatedPreferences: result,
+        },
+      };
+    } catch (error) {
+      console.error("Error updating category preferences:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get all categories with user preference status (simplified version)
+  async getAllCategoriesWithPreferences(userId) {
+    try {
+      const categories = await prisma.category.findMany({
+        orderBy: { name: "asc" },
+      });
+
+      // Get user preferences for all categories
+      const userPreferences = await prisma.userCategoryPreference.findMany({
+        where: { userId },
+        select: {
+          categoryId: true,
+          isPreferred: true,
+        },
+      });
+
+      // Create a map for quick lookup
+      const preferenceMap = new Map();
+      userPreferences.forEach((pref) => {
+        preferenceMap.set(pref.categoryId, pref.isPreferred);
+      });
+
+      // Add isPreferred status to each category
+      const categoriesWithPreferences = categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        isPremium: category.isPremium,
+        isPreferred: preferenceMap.get(category.id) || false,
+        createdAt: category.createdAt,
+        updatedAt: category.updatedAt,
+      }));
+
+      return { success: true, data: categoriesWithPreferences };
+    } catch (error) {
+      console.error("Error getting all categories with preferences:", error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = new UserCategoryPreferenceService();

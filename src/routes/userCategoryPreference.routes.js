@@ -1,10 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const userCategoryPreferenceController = require("../controllers/userCategoryPreference.controller");
-const { authenticate, authorizeRoles } = require("../middleware/auth");
 
-// All routes require authentication
-router.use(authenticate);
+const { authenticate } = require("../middleware/auth");
+
 
 /**
  * @swagger
@@ -17,70 +16,67 @@ router.use(authenticate);
  * @swagger
  * components:
  *   schemas:
- *     UserCategoryPreference:
+ *     CategoryPreferenceUpdate:
+ *       type: object
+ *       required:
+ *         - categoryIds
+ *         - isPreferred
+ *       properties:
+ *         categoryIds:
+ *           type: array
+ *           items:
+ *             type: string
+ *           description: Array of category IDs to update
+ *           example: ["cat_123", "cat_456", "cat_789"]
+ *         isPreferred:
+ *           type: boolean
+ *           description: Whether the categories should be marked as preferred
+ *           example: true
+ *     CategoryWithPreference:
  *       type: object
  *       properties:
  *         id:
  *           type: string
- *         userId:
+ *           example: "cat_123"
+ *         name:
  *           type: string
- *         categoryId:
+ *           example: "Motivation"
+ *         description:
  *           type: string
+ *           example: "Motivational affirmations"
+ *         isPremium:
+ *           type: boolean
+ *           example: false
  *         isPreferred:
  *           type: boolean
- *         priority:
- *           type: integer
+ *           example: true
  *         createdAt:
  *           type: string
  *           format: date-time
+ *           example: "2024-01-01T00:00:00.000Z"
  *         updatedAt:
  *           type: string
  *           format: date-time
- *         category:
- *           type: object
- *           properties:
- *             id:
- *               type: string
- *             name:
- *               type: string
- *             description:
- *               type: string
- *             isPremium:
- *               type: boolean
- *     UserCategoryPreferenceInput:
- *       type: object
- *       properties:
- *         isPreferred:
- *           type: boolean
- *         priority:
- *           type: integer
- *     UserCategoryPreferenceBulkInput:
- *       type: object
- *       properties:
- *         preferences:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               categoryId:
- *                 type: string
- *               isPreferred:
- *                 type: boolean
- *               priority:
- *                 type: integer
+ *           example: "2024-01-01T00:00:00.000Z"
  */
 
 /**
  * @swagger
- * /user-category-preferences:
- *   get:
- *     summary: Get all category preferences for the authenticated user
+ * /user-category-preferences/update-preferences:
+ *   put:
+ *     summary: Update category preferences for the authenticated user
  *     tags: [UserCategoryPreferences]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CategoryPreferenceUpdate'
  *     responses:
  *       200:
- *         description: List of user category preferences
+ *         description: Category preferences updated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -88,43 +84,35 @@ router.use(authenticate);
  *               properties:
  *                 success:
  *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/UserCategoryPreference'
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Category preferences updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     updatedCount:
+ *                       type: integer
+ *                       example: 3
+ *                     categoryIds:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["cat_123", "cat_456", "cat_789"]
+ *                     isPreferred:
+ *                       type: boolean
+ *                       example: true
+ *       400:
+ *         description: Bad request - invalid category IDs or missing parameters
+ *       401:
+ *         description: Unauthorized - authentication required
+ *       500:
+ *         description: Internal server error
  */
 
 /**
  * @swagger
- * /user-category-preferences/preferred:
- *   get:
- *     summary: Get preferred categories for the authenticated user
- *     tags: [UserCategoryPreferences]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of preferred categories
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Category'
- *                 message:
- *                   type: string
- */
-
-/**
- * @swagger
- * /user-category-preferences/categories-with-preferences:
+ * /user-category-preferences/categories:
  *   get:
  *     summary: Get all categories with user preference status
  *     tags: [UserCategoryPreferences]
@@ -132,7 +120,7 @@ router.use(authenticate);
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of categories with user preference status
+ *         description: List of all categories with user preference status
  *         content:
  *           application/json:
  *             schema:
@@ -140,268 +128,30 @@ router.use(authenticate);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 data:
  *                   type: array
  *                   items:
- *                     type: object
+ *                     $ref: '#/components/schemas/CategoryWithPreference'
  *                 message:
  *                   type: string
+ *                   example: "Categories retrieved successfully"
+ *       401:
+ *         description: Unauthorized - authentication required
+ *       500:
+ *         description: Internal server error
  */
 
-/**
- * @swagger
- * /user-category-preferences/{categoryId}:
- *   get:
- *     summary: Get a specific category preference for the authenticated user
- *     tags: [UserCategoryPreferences]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: categoryId
- *         schema:
- *           type: string
- *         required: true
- *         description: Category ID
- *     responses:
- *       200:
- *         description: User category preference
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/UserCategoryPreference'
- *                 message:
- *                   type: string
- *   post:
- *     summary: Create or update a category preference for the authenticated user
- *     tags: [UserCategoryPreferences]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: categoryId
- *         schema:
- *           type: string
- *         required: true
- *         description: Category ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UserCategoryPreferenceInput'
- *     responses:
- *       200:
- *         description: User category preference created/updated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/UserCategoryPreference'
- *                 message:
- *                   type: string
- *   delete:
- *     summary: Delete a category preference for the authenticated user
- *     tags: [UserCategoryPreferences]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: categoryId
- *         schema:
- *           type: string
- *         required: true
- *         description: Category ID
- *     responses:
- *       200:
- *         description: User category preference deleted
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/UserCategoryPreference'
- *                 message:
- *                   type: string
- */
-
-/**
- * @swagger
- * /user-category-preferences/bulk:
- *   put:
- *     summary: Update multiple category preferences for the authenticated user
- *     tags: [UserCategoryPreferences]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UserCategoryPreferenceBulkInput'
- *     responses:
- *       200:
- *         description: User category preferences updated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/UserCategoryPreference'
- *                 message:
- *                   type: string
- */
-
-/**
- * @swagger
- * /user-category-preferences:
- *   delete:
- *     summary: Delete all category preferences for the authenticated user
- *     tags: [UserCategoryPreferences]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: All user category preferences deleted
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     deletedCount:
- *                       type: integer
- *                 message:
- *                   type: string
- */
-
-/**
- * @swagger
- * /user-category-preferences/admin/{userId}:
- *   get:
- *     summary: (Admin) Get category preferences for any user
- *     tags: [UserCategoryPreferences]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         schema:
- *           type: string
- *         required: true
- *         description: User ID
- *     responses:
- *       200:
- *         description: List of user category preferences
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/UserCategoryPreference'
- *                 message:
- *                   type: string
- *   put:
- *     summary: (Admin) Update category preferences for any user
- *     tags: [UserCategoryPreferences]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         schema:
- *           type: string
- *         required: true
- *         description: User ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UserCategoryPreferenceBulkInput'
- *     responses:
- *       200:
- *         description: User category preferences updated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/UserCategoryPreference'
- *                 message:
- *                   type: string
- */
-
-// User routes
-router.get("/", userCategoryPreferenceController.getUserCategoryPreferences);
-router.get(
-  "/preferred",
-  userCategoryPreferenceController.getUserPreferredCategories
-);
-router.get(
-  "/categories-with-preferences",
-  userCategoryPreferenceController.getCategoriesWithUserPreferences
-);
-router.get(
-  "/:categoryId",
-  userCategoryPreferenceController.getUserCategoryPreference
-);
-router.post(
-  "/:categoryId",
-  userCategoryPreferenceController.createOrUpdateUserCategoryPreference
-);
+// Update category preferences with array of category IDs and isPreferred status
 router.put(
-  "/bulk",
-  userCategoryPreferenceController.updateUserCategoryPreferences
-);
-router.delete(
-  "/:categoryId",
-  userCategoryPreferenceController.deleteUserCategoryPreference
-);
-router.delete(
-  "/",
-  userCategoryPreferenceController.deleteAllUserCategoryPreferences
+  "/update-preferences",authenticate,
+  userCategoryPreferenceController.updateCategoryPreferences
 );
 
-// Admin routes
+// Get all categories with preference status (isPreferred true/false)
 router.get(
-  "/admin/:userId",
-  userCategoryPreferenceController.getAdminUserCategoryPreferences
-);
-router.put(
-  "/admin/:userId",
-  userCategoryPreferenceController.updateAdminUserCategoryPreferences
+  "/categories",authenticate,
+  userCategoryPreferenceController.getAllCategoriesWithPreferences
 );
 
 module.exports = router;
