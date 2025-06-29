@@ -16,6 +16,7 @@ const subscriptionRoutes = require("./routes/subscription.routes");
 const subscriptionWebhookRoutes = require("./routes/subscriptionWebhook.routes");
 const adminSubscriptionRoutes = require("./routes/adminSubscription.routes");
 const userCategoryPreferenceRoutes = require("./routes/userCategoryPreference.routes");
+const analyticsRoutes = require("./routes/analytics.routes");
 const setupSwagger = require("./config/swagger");
 
 dotenv.config();
@@ -74,6 +75,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/admin", adminSubscriptionRoutes);
 app.use("/api/user-category-preferences", userCategoryPreferenceRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 app.listen(PORT, () => {
   console.log(`App listening to Port ${PORT}`);
